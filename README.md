@@ -1,17 +1,17 @@
 # LedgerLens
 
-LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildathon Track 04. It reconciles merchant orders, Razorpay-shaped payment exports, settlements, refunds, and fee adjustments. Deterministic rules are the authority; AI is reserved for bounded exception explanation in Phase 3.
+LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildathon Track 04. It reconciles merchant orders, Razorpay-shaped payment exports, settlements, refunds, and fee adjustments. Deterministic rules are the authority; AI is limited to bounded exception explanation.
 
 > **Synthetic data only.** LedgerLens does not move money, use real financial data, or claim a Razorpay integration.
 
-## Phase 1 status
+## Current implementation
 
 - Docker scaffold: Next.js, FastAPI, PostgreSQL
 - Reproducible generator with 130+ source records and hidden ground-truth links
 - Deterministic matching with exact-ID and amount/timestamp fallback rules
 - Safe unresolved outcomes for no-candidate and conflicting-candidate cases
 - Dependency-free unit tests for reconciliation behavior
-- Database schema for later batch persistence, approvals, AI analysis, and audit events
+- PostgreSQL-backed append-only audit events for reconciliation activity, AI availability, and reviewer decisions
 
 ## Phase 2 status
 
@@ -20,23 +20,27 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - Next.js server-side API proxy keeps the browser isolated from the internal FastAPI hostname
 - Responsive interface: the metric strip and review panels collapse without horizontal page overflow
 
-## Phase 3 status
+## AI and review safeguards
 
 - NVIDIA-hosted `openai/gpt-oss-20b` explains only unresolved rule-engine decisions
 - Structured output is constrained to a classification, evidence-grounded explanation, recommendation, and confidence
 - The analysis endpoint receives no hidden ground truth and cannot alter a match or financial record
 - Missing credentials, network failures, and malformed model output produce an explicit unavailable state
+- A reviewer must explicitly approve or reject an available AI recommendation; an unavailable recommendation cannot be approved
+- Approval records the proposed follow-up only. It never changes a source financial record or a deterministic match.
+- The workbench exposes the latest audit events so every conclusion remains inspectable.
 
 ## Architecture
 
 ```text
-Synthetic batch -> FastAPI import/reconciliation -> PostgreSQL audit model
+Synthetic batch -> FastAPI deterministic reconciliation -> PostgreSQL audit events
                            |
-                           +-> Next.js operations workspace (Phase 2)
-                           +-> NVIDIA exception analysis (Phase 3, human-gated)
+                           +-> Next.js operations workspace
+                           +-> NVIDIA exception analysis (advisory only)
+                           +-> explicit reviewer approve/reject record
 ```
 
-## Run the Phase 1 checks
+## Run the checks
 
 ```powershell
 $env:PYTHONPATH = "backend"
@@ -71,8 +75,17 @@ docker compose up --build
 
 The demo includes missing IDs, duplicate candidates, delayed settlements, partial refunds, fee adjustments, timestamp drift, and unmatched entries. It prefers an honest exception over an unsafe match.
 
-## Known Phase 1 limitations
+## Known limitations
 
-- Persistence endpoints and batch-file upload are later work; Phase 2 uses the reproducible synthetic demo batch.
-- NVIDIA analysis, human approval, and audit-log UI are intentionally deferred to later phases.
+- The current import flow uses the reproducible synthetic demo batch; arbitrary CSV upload is not implemented yet.
+- Reviewer identity is a demo label, not authenticated user identity. The audit event stream is append-only through this application, but not a tamper-proof compliance ledger.
+- AI recommendations are advisory and do not persist as financial actions. They are unavailable if NVIDIA credentials or the provider are unavailable.
 - This project contains no live Razorpay integration.
+
+## Short demo script
+
+1. Start the stack, open `http://localhost:3010`, and select **Synthetic August reconciliation batch**.
+2. Run reconciliation. Inspect the real batch metrics and open an unresolved or ambiguous exception.
+3. Read the deterministic evidence first, then request an AI exception analysis. If the provider is unavailable, show the explicit safe fallback.
+4. For an available advisory, choose **Approve follow-up** or **Reject**. The confirmation states that source financial records remain unchanged.
+5. Open the audit panel to show the recorded reconciliation, exception, AI, and reviewer-decision events.

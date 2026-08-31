@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ValidationError
 
 from .ai_analysis import analyze_exception
+from .audit import list_events, record_event, record_reconciliation
 from .generator import build_demo_batch
 from .models import GroundTruthLink, MatchDecision, SourceRecord
 from .reconciliation import reconcile
@@ -20,6 +21,14 @@ class ReconciliationRequest(BaseModel):
 
 class ExceptionAnalysisRequest(BaseModel):
     decision: dict[str, Any]
+
+
+class ResolutionRequest(BaseModel):
+    decision: dict[str, Any]
+    analysis: dict[str, Any]
+    action: str
+    actor_label: str = Field(min_length=2, max_length=80)
+    rationale: str = Field(min_length=2, max_length=500)
 
 
 @app.get("/health")
@@ -41,7 +50,9 @@ def run_reconciliation(payload: ReconciliationRequest) -> dict[str, Any]:
         truth = [GroundTruthLink(**link) for link in payload.ground_truth_links]
     except (TypeError, ValidationError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=f"Malformed import: {exc}") from exc
-    return reconcile(records, truth)
+    report = reconcile(records, truth)
+    record_reconciliation(report)
+    return report
 
 
 @app.post("/api/v1/exception-analyses")
@@ -55,4 +66,28 @@ def run_exception_analysis(payload: ExceptionAnalysisRequest) -> dict[str, Any]:
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=f"Malformed exception evidence: {exc}") from exc
-    return analyze_exception(decision).to_dict()
+    analysis = analyze_exception(decision).to_dict()
+    record_event("ai_analysis_available" if analysis["status"] == "available" else "ai_analysis_unavailable", "match_decision", decision.source_id, analysis)
+    return analysis
+
+
+@app.post("/api/v1/resolutions")
+def record_resolution(payload: ResolutionRequest) -> dict[str, Any]:
+    if payload.action not in {"approved", "rejected"}:
+        raise HTTPException(status_code=422, detail="Resolution action must be approved or rejected.")
+    if payload.analysis.get("status") != "available" or not payload.analysis.get("recommendation"):
+        raise HTTPException(status_code=422, detail="A valid AI advisory is required for an explicit resolution review.")
+    source_id = payload.decision.get("source_id")
+    if not source_id:
+        raise HTTPException(status_code=422, detail="Resolution must identify the exception source record.")
+    review = record_event(f"resolution_{payload.action}", "match_decision", source_id, {
+        "actor_label": payload.actor_label, "rationale": payload.rationale,
+        "proposed_follow_up": payload.analysis["recommendation"], "analysis_confidence": payload.analysis.get("confidence"),
+        "financial_records_changed": False,
+    })
+    return {"resolution": review, "message": "Human decision recorded. Source financial records were not altered."}
+
+
+@app.get("/api/v1/audit-events")
+def audit_events() -> dict[str, Any]:
+    return {"events": list_events()}
