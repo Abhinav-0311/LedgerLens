@@ -60,6 +60,17 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(analysis.status, "unavailable")
         self.assertIsNone(analysis.recommendation)
 
+    def test_ai_timeout_leaves_exception_open_with_a_clear_retry_message(self) -> None:
+        records, truth = build_demo_batch()
+        report = reconcile(records, truth)
+        decision_data = next(item for item in report["decisions"] if item["source_id"] == "pay_unmatched_999")
+        from app.models import MatchDecision
+        decision = MatchDecision(**{**decision_data, "evidence": tuple(decision_data["evidence"])})
+        analysis = analyze_exception(decision, api_key="test-key", requester=lambda _request: (_ for _ in ()).throw(TimeoutError()))
+        self.assertEqual(analysis.status, "unavailable")
+        self.assertIn("Retry analysis", analysis.limitation)
+        self.assertIn("remains unresolved", analysis.limitation)
+
     def test_ai_analysis_accepts_only_bounded_structured_recommendations(self) -> None:
         records, truth = build_demo_batch()
         report = reconcile(records, truth)

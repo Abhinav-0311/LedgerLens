@@ -15,6 +15,7 @@ ALLOWED_RECOMMENDATIONS = {
     "review_settlement_timing",
     "manual_investigation",
 }
+AI_TIMEOUT_SECONDS = 45
 
 
 @dataclass(frozen=True)
@@ -87,12 +88,19 @@ def analyze_exception(decision: MatchDecision, api_key: str | None = None,
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, method="POST",
     )
     try:
-        response_text = requester(request) if requester else urlopen(request, timeout=20).read().decode("utf-8")
+        response_text = requester(request) if requester else urlopen(request, timeout=AI_TIMEOUT_SECONDS).read().decode("utf-8")
         content = json.loads(response_text)["choices"][0]["message"]["content"]
         result = _parse_json(content)
         return ExceptionAnalysis("available", "nvidia", model, result["classification"], result["explanation"],
                                  result["recommendation"], result["confidence"], evidence,
                                  "AI analysis is advisory only. A human must approve any later resolution.")
     except (HTTPError, URLError, TimeoutError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        return _unavailable(model, f"AI analysis is unavailable: {type(exc).__name__}.", evidence)
-
+        if isinstance(exc, TimeoutError):
+            reason = "AI provider did not respond in time. Retry analysis; the exception remains unresolved."
+        elif isinstance(exc, HTTPError):
+            reason = "AI provider rejected the analysis request. Check the configured NVIDIA model and credentials; the exception remains unresolved."
+        elif isinstance(exc, URLError):
+            reason = "AI provider is currently unreachable. Retry analysis; the exception remains unresolved."
+        else:
+            reason = "AI analysis returned an unusable response. Retry analysis; the exception remains unresolved."
+        return _unavailable(model, reason, evidence)
