@@ -66,6 +66,7 @@ def reconcile(records: Iterable[SourceRecord], truth: Iterable[GroundTruthLink] 
     truth_pairs = {(link.left_id, link.right_id, link.relationship) for link in truth}
     auto_matches = [decision for decision in decisions if decision.status == "matched"]
     correct = [decision for decision in auto_matches if (decision.source_id, decision.target_id, decision.relationship) in truth_pairs]
+    incorrect = [decision for decision in auto_matches if (decision.source_id, decision.target_id, decision.relationship) not in truth_pairs]
     categories = Counter(decision.exception_category for decision in decisions if decision.exception_category)
     elapsed_ms = round((perf_counter() - started) * 1000, 3)
 
@@ -73,12 +74,12 @@ def reconcile(records: Iterable[SourceRecord], truth: Iterable[GroundTruthLink] 
         "records_processed": len(all_records),
         "reconcilable_items": len(decisions),
         "auto_match_rate": round(len(auto_matches) / len(decisions), 4) if decisions else 0.0,
-        "verified_matching_accuracy": round(len(correct) / len(auto_matches), 4) if auto_matches else 0.0,
+        "verified_matching_accuracy": round(len(correct) / len(auto_matches), 4) if truth_pairs and auto_matches else None,
         "unresolved_exceptions": len([decision for decision in decisions if decision.status != "matched"]),
         "throughput_records_per_second": round(len(all_records) / (elapsed_ms / 1000), 2) if elapsed_ms else None,
         "processing_time_ms": elapsed_ms,
         "exception_categories": dict(categories),
         "low_confidence_cases": [decision.to_dict() for decision in decisions if 0 < decision.confidence < 0.8],
+        "incorrect_match_examples": [decision.to_dict() for decision in incorrect[:5]],
         "decisions": [decision.to_dict() for decision in decisions],
     }
-

@@ -1,3 +1,3 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 const apiUrl = process.env.LEDGERLENS_API_URL ?? "http://localhost:8010";
-export async function GET() { const result = await fetch(`${apiUrl}/api/v1/audit-events`, { cache: "no-store" }); return NextResponse.json(await result.json(), { status: result.status }); }
+export async function GET(request: NextRequest) { const batchId = request.nextUrl.searchParams.get("batch_id"); if (!batchId) return NextResponse.json({ detail: "batch_id is required." }, { status: 422 }); const result = await fetch(`${apiUrl}/api/v1/audit-events?batch_id=${encodeURIComponent(batchId)}`, { cache: "no-store" }); return NextResponse.json(await result.json(), { status: result.status }); }

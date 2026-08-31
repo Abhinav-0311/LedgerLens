@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from app.ai_analysis import analyze_exception
+from app.batches import parse_import
 from app.generator import build_demo_batch
 from app.models import SourceRecord
 from app.reconciliation import reconcile
@@ -58,6 +59,23 @@ class ReconciliationTests(unittest.TestCase):
         analysis = analyze_exception(decision, api_key="")
         self.assertEqual(analysis.status, "unavailable")
         self.assertIsNone(analysis.recommendation)
+
+    def test_json_import_keeps_ground_truth_separate_from_records(self) -> None:
+        content = """{"label":"Tiny synthetic batch","records":[{"id":"order_1","source":"merchant_orders","record_type":"order","amount_paise":1000,"currency":"INR","occurred_at":"2026-08-01T09:00:00+00:00","status":"paid"},{"id":"pay_1","source":"payments","record_type":"payment","amount_paise":1000,"currency":"INR","occurred_at":"2026-08-01T09:01:00+00:00","status":"captured","merchant_order_id":"order_1"}],"ground_truth_links":[{"left_id":"pay_1","right_id":"order_1","relationship":"payment_to_order"}]}"""
+        label, records, truth = parse_import("tiny.json", content)
+        self.assertEqual(label, "Tiny synthetic batch")
+        self.assertEqual(len(records), 2)
+        self.assertEqual(len(truth), 1)
+
+    def test_malformed_csv_import_is_rejected_with_actionable_error(self) -> None:
+        with self.assertRaisesRegex(ValueError, "missing required fields"):
+            parse_import("bad.csv", "id,source\nrecord_1,merchant_orders\n")
+
+    def test_accuracy_is_not_reported_without_ground_truth(self) -> None:
+        record = SourceRecord(id="pay_only", source="payments", record_type="payment", amount_paise=100,
+                              currency="INR", occurred_at="2026-08-01T09:00:00+00:00", status="captured")
+        report = reconcile([record])
+        self.assertIsNone(report["verified_matching_accuracy"])
 
 
 if __name__ == "__main__":
