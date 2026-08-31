@@ -13,6 +13,13 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - Dependency-free unit tests for reconciliation behavior
 - Database schema for later batch persistence, approvals, AI analysis, and audit events
 
+## Phase 2 status
+
+- Operations workbench with a batch selector, real run action, metric strip, exception queue, and evidence inspector
+- Empty, loading, error, selected, and reset states
+- Next.js server-side API proxy keeps the browser isolated from the internal FastAPI hostname
+- Responsive interface: the metric strip and review panels collapse without horizontal page overflow
+
 ## Architecture
 
 ```text
@@ -59,6 +66,6 @@ The demo includes missing IDs, duplicate candidates, delayed settlements, partia
 
 ## Known Phase 1 limitations
 
-- Persistence endpoints and batch upload UI are Phase 2 work.
+- Persistence endpoints and batch-file upload are later work; Phase 2 uses the reproducible synthetic demo batch.
 - NVIDIA analysis, human approval, and audit-log UI are intentionally deferred to later phases.
 - This project contains no live Razorpay integration.

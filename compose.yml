@@ -24,6 +24,8 @@ services:
 
   web:
     build: ./frontend
+    environment:
+      LEDGERLENS_API_URL: http://api:8000
     ports:
       - "3010:3000"
     depends_on:
