@@ -20,6 +20,13 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - Next.js server-side API proxy keeps the browser isolated from the internal FastAPI hostname
 - Responsive interface: the metric strip and review panels collapse without horizontal page overflow
 
+## Phase 3 status
+
+- NVIDIA-hosted `openai/gpt-oss-20b` explains only unresolved rule-engine decisions
+- Structured output is constrained to a classification, evidence-grounded explanation, recommendation, and confidence
+- The analysis endpoint receives no hidden ground truth and cannot alter a match or financial record
+- Missing credentials, network failures, and malformed model output produce an explicit unavailable state
+
 ## Architecture
 
 ```text

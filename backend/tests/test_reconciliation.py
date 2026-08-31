@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from app.ai_analysis import analyze_exception
 from app.generator import build_demo_batch
 from app.models import SourceRecord
 from app.reconciliation import reconcile
@@ -48,7 +49,16 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(report["unresolved_exceptions"], 1)
         self.assertEqual(report["decisions"][0]["exception_category"], "missing_reference")
 
+    def test_unconfigured_ai_is_explicitly_unavailable(self) -> None:
+        records, truth = build_demo_batch()
+        report = reconcile(records, truth)
+        decision_data = next(item for item in report["decisions"] if item["source_id"] == "pay_unmatched_999")
+        from app.models import MatchDecision
+        decision = MatchDecision(**{**decision_data, "evidence": tuple(decision_data["evidence"])})
+        analysis = analyze_exception(decision, api_key="")
+        self.assertEqual(analysis.status, "unavailable")
+        self.assertIsNone(analysis.recommendation)
+
 
 if __name__ == "__main__":
     unittest.main()
-

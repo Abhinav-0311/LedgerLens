@@ -5,8 +5,9 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ValidationError
 
+from .ai_analysis import analyze_exception
 from .generator import build_demo_batch
-from .models import GroundTruthLink, SourceRecord
+from .models import GroundTruthLink, MatchDecision, SourceRecord
 from .reconciliation import reconcile
 
 app = FastAPI(title="LedgerLens API", version="0.1.0")
@@ -15,6 +16,10 @@ app = FastAPI(title="LedgerLens API", version="0.1.0")
 class ReconciliationRequest(BaseModel):
     records: list[dict[str, Any]] = Field(min_length=1)
     ground_truth_links: list[dict[str, str]] = Field(default_factory=list)
+
+
+class ExceptionAnalysisRequest(BaseModel):
+    decision: dict[str, Any]
 
 
 @app.get("/health")
@@ -38,3 +43,16 @@ def run_reconciliation(payload: ReconciliationRequest) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail=f"Malformed import: {exc}") from exc
     return reconcile(records, truth)
 
+
+@app.post("/api/v1/exception-analyses")
+def run_exception_analysis(payload: ExceptionAnalysisRequest) -> dict[str, Any]:
+    try:
+        decision = MatchDecision(
+            source_id=payload.decision["source_id"], target_id=payload.decision.get("target_id"),
+            relationship=payload.decision["relationship"], status=payload.decision["status"],
+            confidence=float(payload.decision["confidence"]), rule_id=payload.decision.get("rule_id"),
+            evidence=tuple(payload.decision["evidence"]), exception_category=payload.decision.get("exception_category"),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=f"Malformed exception evidence: {exc}") from exc
+    return analyze_exception(decision).to_dict()
