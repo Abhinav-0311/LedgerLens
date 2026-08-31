@@ -35,3 +35,14 @@ def list_events(batch_id: str, limit: int = 80) -> list[dict]:
         cursor.execute("""SELECT id::text, event_type, entity_type, entity_id, payload, created_at
             FROM audit_events WHERE batch_id = %s ORDER BY created_at DESC LIMIT %s""", (batch_id, limit))
         return [{"id": row[0], "event_type": row[1], "entity_type": row[2], "entity_id": row[3], "payload": row[4], "created_at": row[5].isoformat()} for row in cursor.fetchall()]
+
+
+def find_available_advisory(batch_id: str, advisory_id: str, source_id: str) -> dict | None:
+    with _connection() as connection, connection.cursor() as cursor:
+        cursor.execute("""SELECT id::text, payload, created_at FROM audit_events
+            WHERE id = %s AND batch_id = %s AND entity_id = %s AND event_type = 'ai_analysis_available'""",
+            (advisory_id, batch_id, source_id))
+        row = cursor.fetchone()
+    if not row or not isinstance(row[1], dict) or row[1].get("status") != "available" or not row[1].get("recommendation"):
+        return None
+    return {"id": row[0], "payload": row[1], "created_at": row[2].isoformat()}

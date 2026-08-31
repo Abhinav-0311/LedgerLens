@@ -60,6 +60,17 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(analysis.status, "unavailable")
         self.assertIsNone(analysis.recommendation)
 
+    def test_ai_analysis_accepts_only_bounded_structured_recommendations(self) -> None:
+        records, truth = build_demo_batch()
+        report = reconcile(records, truth)
+        decision_data = next(item for item in report["decisions"] if item["source_id"] == "pay_unmatched_999")
+        from app.models import MatchDecision
+        decision = MatchDecision(**{**decision_data, "evidence": tuple(decision_data["evidence"])})
+        response = '{"choices":[{"message":{"content":"{\\\"classification\\\":\\\"missing_reference\\\",\\\"explanation\\\":\\\"No deterministic order candidate exists.\\\",\\\"recommendation\\\":\\\"manual_investigation\\\",\\\"confidence\\\":0.4}"}}]}'
+        analysis = analyze_exception(decision, api_key="test-key", requester=lambda _: response)
+        self.assertEqual(analysis.status, "available")
+        self.assertEqual(analysis.recommendation, "manual_investigation")
+
     def test_json_import_keeps_ground_truth_separate_from_records(self) -> None:
         content = """{"label":"Tiny synthetic batch","records":[{"id":"order_1","source":"merchant_orders","record_type":"order","amount_paise":1000,"currency":"INR","occurred_at":"2026-08-01T09:00:00+00:00","status":"paid"},{"id":"pay_1","source":"payments","record_type":"payment","amount_paise":1000,"currency":"INR","occurred_at":"2026-08-01T09:01:00+00:00","status":"captured","merchant_order_id":"order_1"}],"ground_truth_links":[{"left_id":"pay_1","right_id":"order_1","relationship":"payment_to_order"}]}"""
         label, records, truth = parse_import("tiny.json", content)

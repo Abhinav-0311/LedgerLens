@@ -31,6 +31,7 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - Missing credentials, network failures, and malformed model output produce an explicit unavailable state
 - A reviewer must explicitly approve or reject an available AI recommendation; an unavailable recommendation cannot be approved
 - Approval records the proposed follow-up only. It never changes a source financial record or a deterministic match.
+- The server recomputes the unresolved exception before AI analysis and issues an advisory ID only for a stored available advisory. Resolution requests must reference that exact advisory ID, batch, and source record.
 - The workbench exposes the latest audit events so every conclusion remains inspectable.
 
 ## Architecture
@@ -109,6 +110,7 @@ The demo includes missing IDs, duplicate candidates, delayed settlements, partia
 
 - Reviewer identity is a demo label, not authenticated user identity. The audit event stream is append-only through this application, but not a tamper-proof compliance ledger.
 - AI recommendations are advisory and do not persist as financial actions. They are unavailable if NVIDIA credentials or the provider are unavailable.
+- This demo has no authenticated users or production-grade authorization; its approval gate is a workflow integrity control, not a multi-user access-control system.
 - This project contains no live Razorpay integration.
 
 ## Short demo script
