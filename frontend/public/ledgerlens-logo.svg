@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>LedgerLens reconciliation lens</title>
+  <circle cx="28" cy="28" r="22" fill="#b9ff66" stroke="#191a23" stroke-width="4"/>
+  <path d="M18 20h20M18 28h15M18 36h20" stroke="#191a23" stroke-linecap="round" stroke-width="4"/>
+  <circle cx="18" cy="20" r="2" fill="#fff"/><circle cx="18" cy="28" r="2" fill="#fff"/><circle cx="18" cy="36" r="2" fill="#fff"/>
+  <path d="m42 42 13 13" stroke="#191a23" stroke-linecap="round" stroke-width="7"/>
+  <path d="m35 37 4 4 8-9" fill="none" stroke="#191a23" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+</svg>

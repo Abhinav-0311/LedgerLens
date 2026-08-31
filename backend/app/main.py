@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field, ValidationError
 
 from .ai_analysis import analyze_exception
@@ -116,5 +116,5 @@ def record_resolution(payload: ResolutionRequest) -> dict[str, Any]:
 
 
 @app.get("/api/v1/audit-events")
-def audit_events(batch_id: str) -> dict[str, Any]:
-    return {"events": list_events(batch_id)}
+def audit_events(batch_id: str, limit: int = Query(default=80, ge=1, le=500)) -> dict[str, Any]:
+    return {"events": list_events(batch_id, limit)}

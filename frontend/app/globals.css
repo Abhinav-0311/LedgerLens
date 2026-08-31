@@ -4,7 +4,7 @@
 html, body { min-width: 0; overflow-x: clip; background: var(--color-paper); }
 * { box-sizing: border-box; }
 body { margin: 0; color: var(--color-ink); font-family: var(--font-body); transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
-button, select { font: inherit; } button { cursor: pointer; } button:focus-visible, select:focus-visible, .import-action:focus-within { outline: 3px solid var(--color-focus); outline-offset: 3px; } button:disabled { cursor: not-allowed; opacity: .5; }
+button, select, input { font: inherit; } button { cursor: pointer; } button:focus-visible, select:focus-visible, input:focus-visible, .import-action:focus-within { outline: 3px solid var(--color-focus); outline-offset: 3px; } button:disabled { cursor: not-allowed; opacity: .5; }
 
 .workbench { width: min(1440px, 100%); margin: 0 auto; padding: var(--space-5) clamp(var(--space-4), 4vw, var(--space-10)) var(--space-14); }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 2px 0 var(--space-5); border-bottom: 2px solid var(--color-line); }
@@ -37,3 +37,5 @@ h1, h2, h3, p { min-width: 0; overflow-wrap: anywhere; } h1, h2, h3 { font-famil
 .exception-row.is-selected, .exception-row.is-selected .row-status { color: var(--color-lime-ink); }
 .exception-row.is-selected .exception-main small { color: var(--color-lime-ink); }
 .exception-row.is-selected .status-dot.ambiguous { background: var(--color-surface); }
+.sample-link { display: inline-grid; min-height: 46px; place-items: center; border-bottom: 2px solid var(--color-line); color: var(--color-ink); font-size: .78rem; font-weight: 800; text-decoration: none; }.sample-link:hover { color: var(--color-ink-soft); }
+.reviewer-field { display: grid; gap: 6px; margin-top: var(--space-4); color: var(--color-lime-ink); font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }.reviewer-field input { min-height: 40px; border: 2px solid var(--color-line); border-radius: var(--radius-sm); padding: 0 var(--space-3); background: var(--color-surface); color: var(--color-ink); font: 600 .85rem var(--font-body); text-transform: none; letter-spacing: normal; }.audit-toggle { margin-top: var(--space-3); border: 0; border-bottom: 2px solid var(--color-line); padding: 0 0 3px; background: transparent; color: var(--color-ink); font-size: .78rem; font-weight: 800; }

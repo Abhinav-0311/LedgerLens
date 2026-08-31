@@ -7,27 +7,38 @@ from uuid import uuid4
 from psycopg import connect
 from psycopg.types.json import Jsonb
 
+
 def _connection():
     return connect(os.environ["DATABASE_URL"])
 
 
+def _new_event(event_type: str, entity_type: str, entity_id: str, payload: dict) -> dict:
+    return {"id": str(uuid4()), "event_type": event_type, "entity_type": entity_type,
+            "entity_id": entity_id, "payload": payload, "created_at": datetime.now(timezone.utc).isoformat()}
+
+
+def _insert_event(cursor, batch_id: str, event: dict) -> None:
+    cursor.execute("""INSERT INTO audit_events (id, batch_id, event_type, entity_type, entity_id, payload, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+        (event["id"], batch_id, event["event_type"], event["entity_type"], event["entity_id"], Jsonb(event["payload"]), event["created_at"]))
+
+
 def record_event(batch_id: str, event_type: str, entity_type: str, entity_id: str, payload: dict) -> dict:
-    event = {"id": str(uuid4()), "event_type": event_type, "entity_type": entity_type,
-             "entity_id": entity_id, "payload": payload, "created_at": datetime.now(timezone.utc).isoformat()}
+    event = _new_event(event_type, entity_type, entity_id, payload)
     with _connection() as connection, connection.cursor() as cursor:
-        cursor.execute("""INSERT INTO audit_events (id, batch_id, event_type, entity_type, entity_id, payload, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-            (event["id"], batch_id, event_type, entity_type, entity_id, Jsonb(payload), event["created_at"]))
+        _insert_event(cursor, batch_id, event)
     return event
 
 
 def record_reconciliation(batch_id: str, report: dict) -> None:
-    record_event(batch_id, "reconciliation_completed", "batch", batch_id, {
+    events = [_new_event("reconciliation_completed", "batch", batch_id, {
         "records_processed": report["records_processed"], "verified_matching_accuracy": report["verified_matching_accuracy"],
         "unresolved_exceptions": report["unresolved_exceptions"], "processing_time_ms": report["processing_time_ms"],
-    })
-    for decision in report["decisions"]:
-        record_event(batch_id, "match_recorded" if decision["status"] == "matched" else "exception_recorded", "match_decision", decision["source_id"], decision)
+    })]
+    events.extend(_new_event("match_recorded" if decision["status"] == "matched" else "exception_recorded", "match_decision", decision["source_id"], decision) for decision in report["decisions"])
+    with _connection() as connection, connection.cursor() as cursor:
+        for event in events:
+            _insert_event(cursor, batch_id, event)
 
 
 def list_events(batch_id: str, limit: int = 80) -> list[dict]:

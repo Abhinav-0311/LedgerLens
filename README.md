@@ -10,11 +10,11 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - Reproducible generator with 130+ source records and hidden ground-truth links
 - Deterministic matching with exact-ID and amount/timestamp fallback rules
 - Safe unresolved outcomes for no-candidate and conflicting-candidate cases
-- Dependency-free unit tests for reconciliation behavior
+- Unit and API-contract tests for reconciliation, import validation, AI boundaries, and resolution handling
 - PostgreSQL-backed append-only audit events for reconciliation activity, AI availability, and reviewer decisions
 - JSON/CSV synthetic-batch import with required-field, duplicate-ID, size, and malformed-file validation
 - Persisted batch selection: imported records stay in PostgreSQL while their synthetic ground-truth mapping remains server-side
-- Evaluation view for throughput, low-confidence auto-matches, and any incorrect auto-matches
+- Evaluation view for engine-only throughput, low-confidence auto-matches, and any incorrect auto-matches
 
 ## Operations workspace
 
@@ -32,7 +32,7 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - A reviewer must explicitly approve or reject an available AI recommendation; an unavailable recommendation cannot be approved
 - Approval records the proposed follow-up only. It never changes a source financial record or a deterministic match.
 - The server recomputes the unresolved exception before AI analysis and issues an advisory ID only for a stored available advisory. Resolution requests must reference that exact advisory ID, batch, and source record.
-- The workbench exposes the latest audit events so every conclusion remains inspectable.
+- The workbench exposes recent audit events and an expandable batch history so every conclusion remains inspectable.
 
 ## Architecture
 
@@ -66,6 +66,8 @@ docker compose up --build
 
 Use the **Import file** action in the workbench. LedgerLens accepts `.json` and `.csv` files up to 1 MB and up to 5,000 records. It is intentionally limited to synthetic data for this project.
 
+For the walkthrough, download [the ready-to-import synthetic sample](frontend/public/ledgerlens-synthetic-sample.json) from the workbench or repository.
+
 JSON supports records and an optional hidden evaluation mapping:
 
 ```json
@@ -94,7 +96,7 @@ CSV requires the same record fields as column headers. CSV has no ground-truth-l
 - **Auto-match rate:** deterministic matched decisions / all reconcilable decisions.
 - **Verified matching accuracy:** auto-matches that agree with hidden ground truth / all auto-matches.
 - **Unresolved exceptions:** decisions intentionally left unmatched or ambiguous.
-- **Throughput:** source records processed per second and elapsed processing time.
+- **Engine throughput:** source records processed per second during deterministic rule evaluation. It intentionally excludes file upload, database persistence, audit writes, and optional AI latency.
 - **Low-confidence cases:** deterministic auto-matches below 0.80 confidence are shown separately for review.
 - **Incorrect matches:** only reported when synthetic ground truth exists; the UI shows examples rather than hiding them.
 
@@ -102,7 +104,7 @@ The demo includes missing IDs, duplicate candidates, delayed settlements, partia
 
 ## Known limitations
 
-- Reviewer identity is a demo label, not authenticated user identity. The audit event stream is append-only through this application, but not a tamper-proof compliance ledger.
+- Reviewer identity is operator-entered and not authenticated. The audit event stream is append-only through this application, but not a tamper-proof compliance ledger.
 - AI recommendations are advisory and do not persist as financial actions. They are unavailable if NVIDIA credentials or the provider are unavailable.
 - This demo has no authenticated users or production-grade authorization; its approval gate is a workflow integrity control, not a multi-user access-control system.
 - This project contains no live Razorpay integration.

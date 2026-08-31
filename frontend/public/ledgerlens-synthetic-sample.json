@@ -1,0 +1,16 @@
+{
+  "label": "LedgerLens synthetic import sample",
+  "records": [
+    {"id": "order_sample_001", "source": "merchant_orders", "record_type": "order", "amount_paise": 12500, "currency": "INR", "occurred_at": "2026-08-04T09:00:00+00:00", "status": "paid", "merchant_order_id": "order_sample_001"},
+    {"id": "pay_sample_001", "source": "razorpay_like_payments", "record_type": "payment", "amount_paise": 12500, "currency": "INR", "occurred_at": "2026-08-04T09:01:00+00:00", "status": "captured", "transaction_id": "pay_sample_001", "merchant_order_id": "order_sample_001"},
+    {"id": "set_sample_001", "source": "bank_statement", "record_type": "settlement", "amount_paise": 12250, "currency": "INR", "occurred_at": "2026-08-05T09:00:00+00:00", "status": "settled", "payment_id": "pay_sample_001", "settlement_id": "set_sample_001", "fee_paise": 250},
+    {"id": "order_sample_002", "source": "merchant_orders", "record_type": "order", "amount_paise": 20800, "currency": "INR", "occurred_at": "2026-08-04T10:00:00+00:00", "status": "paid", "merchant_order_id": "order_sample_002"},
+    {"id": "pay_sample_002", "source": "razorpay_like_payments", "record_type": "payment", "amount_paise": 20800, "currency": "INR", "occurred_at": "2026-08-04T10:04:00+00:00", "status": "captured", "transaction_id": "pay_sample_002"},
+    {"id": "pay_sample_unmatched", "source": "razorpay_like_payments", "record_type": "payment", "amount_paise": 99999, "currency": "INR", "occurred_at": "2026-08-04T11:00:00+00:00", "status": "captured", "transaction_id": "pay_sample_unmatched"}
+  ],
+  "ground_truth_links": [
+    {"left_id": "pay_sample_001", "right_id": "order_sample_001", "relationship": "payment_to_order"},
+    {"left_id": "set_sample_001", "right_id": "pay_sample_001", "relationship": "settlement_to_payment"},
+    {"left_id": "pay_sample_002", "right_id": "order_sample_002", "relationship": "payment_to_order"}
+  ]
+}
