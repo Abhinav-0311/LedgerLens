@@ -41,7 +41,7 @@ class ImportRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "phase": "6"}
+    return {"status": "ok", "release": "submission-ready"}
 
 
 @app.get("/api/v1/demo-batch")

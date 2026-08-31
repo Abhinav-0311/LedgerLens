@@ -16,7 +16,7 @@ LedgerLens is a synthetic-data AI Finance Controller for the Razorpay AI Buildat
 - Persisted batch selection: imported records stay in PostgreSQL while their synthetic ground-truth mapping remains server-side
 - Evaluation view for throughput, low-confidence auto-matches, and any incorrect auto-matches
 
-## Phase 2 status
+## Operations workspace
 
 - Operations workbench with a batch selector, real run action, metric strip, exception queue, and evidence inspector
 - Empty, loading, error, selected, and reset states
@@ -47,16 +47,10 @@ Synthetic JSON/CSV batch -> FastAPI validation -> PostgreSQL persisted batch -> 
 ## Run the checks
 
 ```powershell
-$env:PYTHONPATH = "backend"
-C:\Users\Abhinav Jain\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe -m unittest discover -s backend/tests -v
+docker compose exec api python -m unittest discover -s tests -v
 ```
 
-Generate a local demo JSON file (ignored by Git):
-
-```powershell
-$env:PYTHONPATH = "backend"
-C:\Users\Abhinav Jain\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe -m app.generator
-```
+Run the checks after starting the stack. The default batch is seeded automatically on first use.
 
 ## Start the stack
 
@@ -120,3 +114,11 @@ The demo includes missing IDs, duplicate candidates, delayed settlements, partia
 3. Read the deterministic evidence first, then request an AI exception analysis. If the provider is unavailable, show the explicit safe fallback.
 4. For an available advisory, choose **Approve follow-up** or **Reject**. The confirmation states that source financial records remain unchanged.
 5. Open the audit panel to show the recorded reconciliation, exception, AI, and reviewer-decision events.
+
+## Submission checklist
+
+- [x] Synthetic data only; no live Razorpay integration or money movement
+- [x] Deterministic reconciliation with inspectable evidence and exception handling
+- [x] Hidden synthetic ground truth and honest batch metrics
+- [x] Bounded, optional AI exception analysis with human-gated follow-up
+- [x] Audit events for reconciliation, AI advice, and reviewer actions

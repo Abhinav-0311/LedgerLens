@@ -1,2 +1,1 @@
-"""LedgerLens Phase 1 backend."""
-
+"""LedgerLens finance-operations backend."""
