@@ -10,6 +10,7 @@ type AuditEvent = { id: string; event_type: string; entity_id: string; created_a
 const words = (value: string) => value.replaceAll("_", " ");
 
 export function ReconciliationWorkbench() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [batches, setBatches] = useState<Batch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [report, setReport] = useState<Report | null>(null);
@@ -32,6 +33,8 @@ export function ReconciliationWorkbench() {
     setSelectedBatchId((current) => current || body.batches.find((batch: Batch) => batch.id === "00000000-0000-0000-0000-000000000004")?.id || body.batches[0]?.id || "");
   }
   useEffect(() => { void loadBatches().catch((cause) => setError(cause.message)); }, []);
+  useEffect(() => { const saved = window.localStorage.getItem("ledgerlens-theme"); if (saved === "dark" || saved === "light") setTheme(saved); }, []);
+  useEffect(() => { document.documentElement.dataset.theme = theme; window.localStorage.setItem("ledgerlens-theme", theme); }, [theme]);
   async function loadAudit(batchId: string) { const response = await fetch(`/api/audit-events?batch_id=${encodeURIComponent(batchId)}`); if (response.ok) setAuditEvents((await response.json()).events); }
   async function runBatch() {
     if (!selectedBatchId) return;
@@ -62,7 +65,7 @@ export function ReconciliationWorkbench() {
   function reset() { setReport(null); setSelectedId(null); setAnalysis(null); setError(null); setState("idle"); }
   const metrics = [["Records processed", report ? String(report.records_processed) : "—"], ["Auto-match rate", report ? `${Math.round(report.auto_match_rate * 100)}%` : "—"], ["Verified accuracy", report ? (report.verified_matching_accuracy === null ? "Not supplied" : `${Math.round(report.verified_matching_accuracy * 100)}%`) : "—"], ["Unresolved", report ? String(report.unresolved_exceptions) : "—"], ["Throughput", report?.throughput_records_per_second ? `${report.throughput_records_per_second}/s` : "—"]];
   return <main className="workbench">
-    <header className="topbar"><div className="brand"><span className="brand-mark" aria-hidden="true">L</span>LedgerLens</div><p className="source-label">Synthetic data only · no live Razorpay integration</p></header>
+    <header className="topbar"><div className="brand"><img className="brand-logo" src="/ledgerlens-logo.png" alt="LedgerLens reconciliation lens"/>LedgerLens</div><div className="topbar-actions"><p className="source-label">Synthetic data only · no live Razorpay integration</p><button className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} aria-pressed={theme === "dark"}>{theme === "light" ? "◐ Dark" : "◑ Light"}</button></div></header>
     <section className="runbar" aria-labelledby="workspace-heading"><div><p className="eyebrow">Reconciliation workspace</p><h1 id="workspace-heading">Close the batch. Keep the uncertainty visible.</h1><p className="lede">Deterministic rules reconcile the evidence. Exceptions stay open until a human reviews them.</p></div><div className="run-controls"><label className="batch-picker">Batch<select aria-label="Select reconciliation batch" value={selectedBatchId} onChange={(event) => { setSelectedBatchId(event.target.value); reset(); }}>{batches.map((batch) => <option value={batch.id} key={batch.id}>{batch.label} · {batch.record_count} records</option>)}</select></label><label className="import-action">Import synthetic file<input aria-label="Import synthetic JSON or CSV batch" type="file" accept=".json,.csv,application/json,text/csv" onChange={importFile}/><span>Import file</span></label><button className="primary-action" onClick={runBatch} disabled={state === "loading" || !selectedBatchId}>{state === "loading" ? "Working…" : "Run reconciliation"}</button>{report && <button className="quiet-action" onClick={reset}>Reset view</button>}</div></section>
     {error && <section className="error-banner" role="alert"><strong>Action unavailable.</strong> {error} <button onClick={() => setError(null)}>Dismiss</button></section>}{importMessage && <p className="import-message">{importMessage}</p>}
     <section className="metric-grid" aria-label="Batch metrics">{metrics.map(([label, value]) => <article className="metric" key={label}><span>{label}</span><strong>{value}</strong></article>)}<article className="metric metric-note"><span>Processing time</span><strong>{report ? `${report.processing_time_ms} ms` : "Awaiting run"}</strong></article></section>
